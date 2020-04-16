@@ -4,7 +4,9 @@ import pt from 'date-fns/locale/pt';
 import User from '../models/User';
 import Appointment from '../models/Appointment';
 
-import Notificantion from '../schemas/Notificantion';
+import Notification from '../schemas/Notification';
+
+import Cache from '../../lib/Cache';
 
 class CreateAppointmentService {
   async run({ provider_id, user_id, date }) {
@@ -50,7 +52,7 @@ class CreateAppointmentService {
     const appointment = await Appointment.create({
       user_id,
       provider_id,
-      date: hourStart,
+      date,
     });
 
     /**
@@ -64,10 +66,16 @@ class CreateAppointmentService {
       { locale: pt }
     );
 
-    await Notificantion.create({
+    await Notification.create({
       content: `Novo agendamento de ${user.name} para ${formattedDate} `,
       user: provider_id,
     });
+
+    /**
+     * Invalidate cache;
+     */
+
+    await Cache.invalidatePrefix(`user:${user.id}:appointments`);
 
     return appointment;
   }
